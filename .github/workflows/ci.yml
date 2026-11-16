@@ -1,0 +1,153 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  php:
+    name: PHP ${{ matrix.php }} (style, static analysis, tests)
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.3', '8.4']
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_DB: pushpilot_test
+          POSTGRES_USER: pushpilot
+          POSTGRES_PASSWORD: secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pushpilot -d pushpilot_test"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:8-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+
+    env:
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: pushpilot_test
+      DB_USERNAME: pushpilot
+      DB_PASSWORD: secret
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: pdo_pgsql, pgsql, redis, pcntl, posix, intl, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Validate composer.json
+        run: composer validate --no-check-publish
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Audit PHP dependencies
+        run: composer audit
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Pint
+        run: ./vendor/bin/pint --test
+
+      - name: Larastan (level 8)
+        run: ./vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+      - name: Pest
+        run: php artisan test
+
+  frontend:
+    name: Frontend (lint, types, build)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      # Wayfinder generates the typed route helpers from the Laravel routes.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
+        with:
+          php-version: '8.4'
+          tools: composer:v2
+          coverage: none
+
+      - name: Setup Node
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: |
+          composer install --no-interaction --no-progress --prefer-dist
+          npm ci
+
+      - name: Prepare environment
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan wayfinder:generate --with-form
+
+      - name: Audit npm dependencies
+        run: npm audit --audit-level=high
+
+      - name: Lint and format check
+        run: npm run lint
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Build
+        run: npm run build
+
+  docker:
+    name: Docker images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build app and target images
+        run: |
+          cp .env.example .env
+          docker compose build app target

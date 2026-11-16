@@ -9,7 +9,6 @@ x-app: &app
     build:
         context: docker/app
     image: pushpilot-app:dev
-    env_file: .env
     volumes:
         - .:/var/www/html
     depends_on:

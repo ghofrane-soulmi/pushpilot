@@ -1,0 +1,131 @@
+{
+    "$schema": "https://getcomposer.org/schema.json",
+    "name": "pushpilot/pushpilot",
+    "type": "project",
+    "description": "Self-hosted zero-downtime deployments for Laravel apps on a VPS.",
+    "keywords": [
+        "laravel",
+        "deployment",
+        "zero-downtime",
+        "ssh"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": "^8.3",
+        "inertiajs/inertia-laravel": "^3.0",
+        "laravel/fortify": "^1.37.2",
+        "laravel/framework": "^12.0",
+        "laravel/horizon": "^5.51",
+        "laravel/reverb": "^1.13",
+        "laravel/tinker": "^3.0",
+        "laravel/wayfinder": "^0.1.14",
+        "phpseclib/phpseclib": "^3.0"
+    },
+    "require-dev": {
+        "fakerphp/faker": "^1.24",
+        "larastan/larastan": "^3.9",
+        "laravel/pail": "^1.2.5",
+        "laravel/pao": "^1.0.6",
+        "laravel/pint": "^1.27",
+        "laravel/sail": "^1.53",
+        "mockery/mockery": "^1.6",
+        "nunomaduro/collision": "^8.9.3",
+        "pestphp/pest": "^4.7",
+        "pestphp/pest-plugin-laravel": "^4.1",
+        "phpunit/phpunit": "^12.5.23"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/",
+            "Database\\Factories\\": "database/factories/",
+            "Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "setup": [
+            "Composer\\Config::disableProcessTimeout",
+            "composer install",
+            "@php -r \"if (! file_exists('.env')) { copy('.env.example', '.env'); passthru(PHP_BINARY.' artisan key:generate --ansi'); }\"",
+            "npm install",
+            "docker compose up -d --build --wait",
+            "docker compose exec -T app php artisan migrate --force",
+            "npm run build"
+        ],
+        "up": [
+            "Composer\\Config::disableProcessTimeout",
+            "docker compose up -d --build --wait"
+        ],
+        "down": [
+            "docker compose down"
+        ],
+        "dev": [
+            "Composer\\Config::disableProcessTimeout",
+            "docker compose up -d --wait",
+            "npm run dev"
+        ],
+        "lint": [
+            "pint --parallel"
+        ],
+        "lint:check": [
+            "pint --parallel --test"
+        ],
+        "ci:check": [
+            "Composer\\Config::disableProcessTimeout",
+            "npm run check",
+            "npm run types:check",
+            "@test"
+        ],
+        "types:check": [
+            "phpstan analyse"
+        ],
+        "test": [
+            "@php artisan config:clear --ansi",
+            "@lint:check",
+            "@types:check",
+            "@php artisan test"
+        ],
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi",
+            "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan migrate --graceful --ansi"
+        ],
+        "pre-package-uninstall": [
+            "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "platform": {
+            "ext-pcntl": "8.4",
+            "ext-posix": "8.4"
+        },
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true
+}

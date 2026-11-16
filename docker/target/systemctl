@@ -1,0 +1,13 @@
+#!/bin/sh
+# Minimal systemctl replacement for the target container (no systemd).
+# Supports exactly: systemctl reload php8.3-fpm
+set -eu
+
+if [ "$#" -eq 2 ] && [ "$1" = "reload" ] && [ "$2" = "php8.3-fpm" ]; then
+    kill -USR2 "$(cat /run/php/php8.3-fpm.pid)"
+    echo "Reloaded php8.3-fpm"
+    exit 0
+fi
+
+echo "systemctl shim: unsupported command: $*" >&2
+exit 1

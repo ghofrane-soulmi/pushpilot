@@ -1,0 +1,2 @@
+# Pushpilot only needs sudo to reload PHP-FPM after switching releases.
+deployer ALL=(root) NOPASSWD: /usr/bin/systemctl reload php8.3-fpm

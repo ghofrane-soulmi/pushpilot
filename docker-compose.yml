@@ -6,82 +6,87 @@
 # Vite runs on the host (`npm run dev`); PHP, queues, websockets and data run here.
 
 x-app: &app
-  build:
-    context: docker/app
-  image: pushpilot-app:dev
-  env_file: .env
-  volumes:
-    - .:/var/www/html
-  depends_on:
-    postgres:
-      condition: service_healthy
-    redis:
-      condition: service_healthy
-  restart: unless-stopped
+    build:
+        context: docker/app
+    image: pushpilot-app:dev
+    env_file: .env
+    volumes:
+        - .:/var/www/html
+    depends_on:
+        postgres:
+            condition: service_healthy
+        redis:
+            condition: service_healthy
+    restart: unless-stopped
 
 services:
-  app:
-    <<: *app
-    ports:
-      - "${APP_PORT:-8000}:8000"
+    app:
+        <<: *app
+        ports:
+            - '${APP_PORT:-8000}:8000'
 
-  worker:
-    <<: *app
-    command: ["php", "artisan", "horizon"]
+    worker:
+        <<: *app
+        command: ['php', 'artisan', 'horizon']
 
-  reverb:
-    <<: *app
-    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
-    ports:
-      - "${REVERB_EXPOSED_PORT:-8080}:8080"
+    reverb:
+        <<: *app
+        command:
+            ['php', 'artisan', 'reverb:start', '--host=0.0.0.0', '--port=8080']
+        ports:
+            - '${REVERB_EXPOSED_PORT:-8080}:8080'
 
-  postgres:
-    image: postgres:18-alpine
-    environment:
-      POSTGRES_DB: ${DB_DATABASE:-pushpilot}
-      POSTGRES_USER: ${DB_USERNAME:-pushpilot}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
-    ports:
-      - "${DB_EXPOSED_PORT:-5432}:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
+    postgres:
+        image: postgres:18-alpine
+        environment:
+            POSTGRES_DB: ${DB_DATABASE:-pushpilot}
+            POSTGRES_USER: ${DB_USERNAME:-pushpilot}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
+        ports:
+            - '${DB_EXPOSED_PORT:-5432}:5432'
+        volumes:
+            - postgres-data:/var/lib/postgresql
+        healthcheck:
+            test:
+                [
+                    'CMD-SHELL',
+                    'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}',
+                ]
+            interval: 5s
+            timeout: 5s
+            retries: 10
+        restart: unless-stopped
 
-  redis:
-    image: redis:8-alpine
-    ports:
-      - "${REDIS_EXPOSED_PORT:-6379}:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 10
-    restart: unless-stopped
+    redis:
+        image: redis:8-alpine
+        ports:
+            - '${REDIS_EXPOSED_PORT:-6379}:6379'
+        volumes:
+            - redis-data:/data
+        healthcheck:
+            test: ['CMD', 'redis-cli', 'ping']
+            interval: 5s
+            timeout: 5s
+            retries: 10
+        restart: unless-stopped
 
-  # Fake VPS to deploy to. Pushpilot reaches it as target:22 (user: deployer).
-  # From the host: ssh -p 2222 deployer@localhost, deployed app on http://localhost:8081
-  target:
-    build:
-      context: docker/target
-    image: pushpilot-target:dev
-    hostname: target
-    ports:
-      - "${TARGET_SSH_PORT:-2222}:22"
-      - "${TARGET_HTTP_PORT:-8081}:80"
-    volumes:
-      - target-home:/home/deployer
-      - target-www:/var/www/app
-    restart: unless-stopped
+    # Fake VPS to deploy to. Pushpilot reaches it as target:22 (user: deployer).
+    # From the host: ssh -p 2222 deployer@localhost, deployed app on http://localhost:8081
+    target:
+        build:
+            context: docker/target
+        image: pushpilot-target:dev
+        hostname: target
+        ports:
+            - '${TARGET_SSH_PORT:-2222}:22'
+            - '${TARGET_HTTP_PORT:-8081}:80'
+        volumes:
+            - target-home:/home/deployer
+            - target-www:/var/www/app
+        restart: unless-stopped
 
 volumes:
-  postgres-data:
-  redis-data:
-  target-home:
-  target-www:
+    postgres-data:
+    redis-data:
+    target-home:
+    target-www:

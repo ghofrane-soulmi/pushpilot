@@ -73,7 +73,7 @@ return [
     |
     */
 
-    'home' => '/dashboard',
+    'home' => '/',
 
     /*
     |--------------------------------------------------------------------------
@@ -143,8 +143,9 @@ return [
     |
     */
 
+    // Password reset is intentionally disabled: only login, first-run setup and
+    // the webhook endpoint may be reachable without authentication (spec 7.1).
     'features' => [
-        Features::resetPasswords(),
         Features::twoFactorAuthentication([
             'confirm' => true,
             'confirmPassword' => true,

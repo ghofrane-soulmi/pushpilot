@@ -12,6 +12,8 @@ class DashboardTest extends TestCase
 
     public function test_guests_are_redirected_to_the_login_page()
     {
+        User::factory()->create();
+
         $response = $this->get(route('dashboard'));
         $response->assertRedirect(route('login'));
     }

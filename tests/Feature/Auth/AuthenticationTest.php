@@ -14,6 +14,8 @@ class AuthenticationTest extends TestCase
 
     public function test_login_screen_can_be_rendered()
     {
+        User::factory()->create();
+
         $response = $this->get(route('login'));
 
         $response->assertOk();
@@ -71,7 +73,7 @@ class AuthenticationTest extends TestCase
 
         $response = $this->actingAs($user)->post(route('logout'));
 
-        $response->assertRedirect(route('home'));
+        $response->assertRedirect(route('dashboard'));
 
         $this->assertGuest();
     }
@@ -88,5 +90,24 @@ class AuthenticationTest extends TestCase
         ]);
 
         $response->assertTooManyRequests();
+    }
+
+    public function test_five_failed_logins_within_a_minute_throttle_the_sixth_attempt()
+    {
+        $user = User::factory()->create();
+
+        for ($attempt = 1; $attempt <= 5; $attempt++) {
+            $this->post(route('login.store'), [
+                'email' => $user->email,
+                'password' => 'wrong-password',
+            ])->assertSessionHasErrors('email');
+        }
+
+        $this->post(route('login.store'), [
+            'email' => $user->email,
+            'password' => 'password',
+        ])->assertTooManyRequests();
+
+        $this->assertGuest();
     }
 }

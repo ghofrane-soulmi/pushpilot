@@ -1,11 +1,17 @@
 <?php
 
+use App\Http\Controllers\SetupController;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'Welcome')->name('home');
+Route::middleware('guest')->group(function () {
+    Route::get('setup', [SetupController::class, 'create'])->name('setup.create');
+    Route::post('setup', [SetupController::class, 'store'])
+        ->middleware('throttle:10,1')
+        ->name('setup.store');
+});
 
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::inertia('dashboard', 'Dashboard')->name('dashboard');
+Route::middleware('auth')->group(function () {
+    Route::inertia('/', 'Dashboard')->name('dashboard');
 });
 
 require __DIR__.'/settings.php';

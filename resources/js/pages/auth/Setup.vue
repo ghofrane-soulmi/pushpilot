@@ -1,52 +1,60 @@
 <script setup lang="ts">
 import { Form, Head } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import SetupController from '@/actions/App/Http/Controllers/SetupController';
 import InputError from '@/components/InputError.vue';
 import PasswordInput from '@/components/PasswordInput.vue';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { update } from '@/routes/password';
 
 defineOptions({
     layout: {
-        title: 'Reset password',
-        description: 'Please enter your new password below',
+        title: 'Welcome to Pushpilot',
+        description:
+            'Create the owner account. This screen is only available until the first account exists.',
     },
 });
 
-const props = defineProps<{
-    token: string;
-    email: string;
+defineProps<{
     passwordRules: string;
 }>();
-
-const inputEmail = ref(props.email);
 </script>
 
 <template>
-    <Head title="Reset password" />
+    <Head title="First-run setup" />
 
     <Form
-        v-bind="update.form()"
-        :transform="(data) => ({ ...data, token, email })"
+        v-bind="SetupController.store.form()"
         :reset-on-success="['password', 'password_confirmation']"
         v-slot="{ errors, processing }"
+        class="flex flex-col gap-6"
     >
         <div class="grid gap-6">
             <div class="grid gap-2">
-                <Label for="email">Email</Label>
+                <Label for="name">Name</Label>
+                <Input
+                    id="name"
+                    name="name"
+                    required
+                    v-focus
+                    autocomplete="name"
+                    placeholder="Full name"
+                />
+                <InputError :message="errors.name" />
+            </div>
+
+            <div class="grid gap-2">
+                <Label for="email">Email address</Label>
                 <Input
                     id="email"
                     type="email"
                     name="email"
+                    required
                     autocomplete="email"
-                    v-model="inputEmail"
-                    class="mt-1 block w-full"
-                    readonly
+                    placeholder="email@example.com"
                 />
-                <InputError :message="errors.email" class="mt-2" />
+                <InputError :message="errors.email" />
             </div>
 
             <div class="grid gap-2">
@@ -54,36 +62,35 @@ const inputEmail = ref(props.email);
                 <PasswordInput
                     id="password"
                     name="password"
+                    required
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
-                    autofocus
-                    placeholder="Password"
                     :passwordrules="passwordRules"
+                    placeholder="Password"
                 />
                 <InputError :message="errors.password" />
             </div>
 
             <div class="grid gap-2">
-                <Label for="password_confirmation"> Confirm password </Label>
+                <Label for="password_confirmation">Confirm password</Label>
                 <PasswordInput
                     id="password_confirmation"
                     name="password_confirmation"
+                    required
                     autocomplete="new-password"
-                    class="mt-1 block w-full"
-                    placeholder="Confirm password"
                     :passwordrules="passwordRules"
+                    placeholder="Confirm password"
                 />
                 <InputError :message="errors.password_confirmation" />
             </div>
 
             <Button
                 type="submit"
-                class="mt-4 w-full"
+                class="mt-2 w-full"
                 :disabled="processing"
-                data-test="reset-password-button"
+                data-test="setup-button"
             >
                 <Spinner v-if="processing" />
-                Reset password
+                Create owner account
             </Button>
         </div>
     </Form>

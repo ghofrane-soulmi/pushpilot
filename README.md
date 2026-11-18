@@ -121,6 +121,14 @@ docker compose exec postgres createdb -U pushpilot pushpilot_test
 docker compose exec -e DB_CONNECTION=pgsql -e DB_HOST=postgres -e DB_DATABASE=pushpilot_test app php artisan test
 ```
 
+Real SSH tests run the `PhpseclibSshClient` against the `target` container (they authorize a
+throw-away key, then remove it). They are skipped unless enabled:
+
+```bash
+docker compose up -d target
+SSH_INTEGRATION=1 php artisan test --group=integration
+```
+
 ### Windows notes
 
 - Horizon needs the `pcntl`/`posix` extensions, which do not exist on Windows. `composer.json`

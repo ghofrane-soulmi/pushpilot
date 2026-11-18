@@ -2,11 +2,14 @@
 
 namespace App\Providers;
 
+use App\Domain\Servers\Models\Server;
+use App\Policies\ServerPolicy;
 use App\Support\Ssh\PhpseclibSshClient;
 use App\Support\Ssh\SshClient;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -26,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // Domain models live outside App\Models, so map their policies explicitly.
+        Gate::policy(Server::class, ServerPolicy::class);
     }
 
     /**

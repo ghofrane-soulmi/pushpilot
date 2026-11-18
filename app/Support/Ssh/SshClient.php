@@ -12,7 +12,8 @@ use Closure;
  * tests swap in FakeSshClient, so no test ever needs a real server.
  *
  * Callers are responsible for escaping: every value interpolated into
- * $command must go through escapeshellarg() or a validated allowlist.
+ * $command must go through Shell::quote() (POSIX-safe escapeshellarg) or a
+ * validated allowlist.
  */
 interface SshClient
 {

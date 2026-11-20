@@ -34,11 +34,16 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import {
+    create as createProject,
+    show as showProject,
+} from '@/routes/projects';
 import { edit, index, show } from '@/routes/servers';
 import type { ConnectionTestFlash, ServerDetails } from '@/types';
 
 const props = defineProps<{
     server: ServerDetails;
+    projects: { id: number; name: string; deploy_path: string }[];
 }>();
 
 defineOptions({
@@ -272,6 +277,46 @@ const lastChecked = computed(() =>
                         </div>
                     </li>
                 </ul>
+            </CardContent>
+        </Card>
+
+        <!-- Projects deployed to this server -->
+        <Card>
+            <CardHeader>
+                <CardTitle>Projects</CardTitle>
+                <CardDescription
+                    >Projects deployed to this server.</CardDescription
+                >
+            </CardHeader>
+            <CardContent class="space-y-3">
+                <p
+                    v-if="projects.length === 0"
+                    class="text-sm text-muted-foreground"
+                >
+                    No projects yet.
+                </p>
+                <ul v-else class="divide-y rounded-md border">
+                    <li
+                        v-for="project in projects"
+                        :key="project.id"
+                        class="flex justify-between gap-4 px-4 py-2 text-sm"
+                    >
+                        <Link
+                            :href="showProject(project.id)"
+                            class="font-medium underline-offset-4 hover:underline"
+                            >{{ project.name }}</Link
+                        >
+                        <code class="font-mono text-xs text-muted-foreground">{{
+                            project.deploy_path
+                        }}</code>
+                    </li>
+                </ul>
+                <Button variant="outline" size="sm" as-child>
+                    <Link
+                        :href="createProject({ query: { server: server.id } })"
+                        >New project on this server</Link
+                    >
+                </Button>
             </CardContent>
         </Card>
 

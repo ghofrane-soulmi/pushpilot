@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Projects\Models\Project;
 use App\Domain\Servers\Actions\CreateServer;
 use App\Domain\Servers\Actions\DeleteServer;
 use App\Domain\Servers\Actions\UpdateServer;
+use App\Domain\Servers\Exceptions\ServerInUseException;
 use App\Domain\Servers\Models\Server;
 use App\Http\Requests\Servers\ServerRequest;
 use App\Http\Resources\ServerResource;
@@ -51,6 +53,12 @@ class ServerController extends Controller
 
         return Inertia::render('servers/Show', [
             'server' => (new ServerResource($server))->withDetails($request),
+            'projects' => $server->projects()->orderBy('name')->get(['id', 'name', 'deploy_path'])
+                ->map(fn (Project $project): array => [
+                    'id' => $project->id,
+                    'name' => $project->name,
+                    'deploy_path' => $project->deploy_path,
+                ])->all(),
         ]);
     }
 
@@ -78,7 +86,13 @@ class ServerController extends Controller
     {
         Gate::authorize('delete', $server);
 
-        $deleteServer->handle($server);
+        try {
+            $deleteServer->handle($server);
+        } catch (ServerInUseException $e) {
+            Inertia::flash('toast', ['type' => 'error', 'message' => $e->getMessage()]);
+
+            return to_route('servers.show', $server);
+        }
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Server deleted.')]);
 

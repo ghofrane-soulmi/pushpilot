@@ -2,6 +2,7 @@
 
 namespace App\Domain\Servers\Models;
 
+use App\Domain\Projects\Models\Project;
 use App\Domain\Servers\Enums\ServerStatus;
 use App\Support\Ssh\Shell;
 use App\Support\Ssh\SshCredentials;
@@ -9,6 +10,7 @@ use Carbon\CarbonImmutable;
 use Database\Factories\ServerFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A remote Linux machine reachable over SSH.
@@ -64,6 +66,14 @@ class Server extends Model
             'last_checked_at' => 'immutable_datetime',
             'requirements' => 'array',
         ];
+    }
+
+    /**
+     * @return HasMany<Project, $this>
+     */
+    public function projects(): HasMany
+    {
+        return $this->hasMany(Project::class);
     }
 
     public function credentials(): SshCredentials

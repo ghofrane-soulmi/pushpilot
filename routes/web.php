@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\ProjectEnvironmentController;
+use App\Http\Controllers\ProjectInitializationController;
 use App\Http\Controllers\ServerConnectionController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\SetupController;
@@ -22,6 +25,21 @@ Route::middleware('auth')->group(function () {
     Route::post('servers/{server}/check', [ServerConnectionController::class, 'check'])
         ->middleware('throttle:20,1')
         ->name('servers.check');
+
+    Route::resource('projects', ProjectController::class);
+    Route::post('projects/{project}/initialize', ProjectInitializationController::class)
+        ->middleware('throttle:10,1')
+        ->name('projects.initialize');
+
+    Route::controller(ProjectEnvironmentController::class)
+        ->prefix('projects/{project}/environment')
+        ->name('projects.environment.')
+        ->group(function () {
+            Route::get('/', 'edit')->name('edit');
+            Route::put('/', 'set')->middleware('throttle:30,1')->name('set');
+            Route::post('replace', 'replace')->middleware('throttle:10,1')->name('replace');
+            Route::delete('{key}', 'remove')->middleware('throttle:30,1')->name('remove');
+        });
 });
 
 require __DIR__.'/settings.php';

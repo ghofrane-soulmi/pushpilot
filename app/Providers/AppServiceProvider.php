@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Domain\Projects\Models\Project;
 use App\Domain\Servers\Models\Server;
+use App\Policies\ProjectPolicy;
 use App\Policies\ServerPolicy;
 use App\Support\Ssh\PhpseclibSshClient;
 use App\Support\Ssh\SshClient;
@@ -32,6 +34,7 @@ class AppServiceProvider extends ServiceProvider
 
         // Domain models live outside App\Models, so map their policies explicitly.
         Gate::policy(Server::class, ServerPolicy::class);
+        Gate::policy(Project::class, ProjectPolicy::class);
     }
 
     /**

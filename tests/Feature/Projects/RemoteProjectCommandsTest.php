@@ -12,9 +12,9 @@ function remoteProject(array $attributes = []): RemoteProject
         'repository_url' => 'git@github.com:acme/shop.git',
         'branch' => 'main',
         'shared_paths' => ['.env', 'storage/'],
-        'deploy_private_key' => "-----BEGIN OPENSSH PRIVATE KEY-----
+        'deploy_private_key' => '-----BEGIN OPENSSH PRIVATE KEY-----
 abc
------END OPENSSH PRIVATE KEY-----",
+-----END OPENSSH PRIVATE KEY-----',
         ...$attributes,
     ]);
 

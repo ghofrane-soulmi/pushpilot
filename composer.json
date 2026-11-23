@@ -118,6 +118,7 @@
         "preferred-install": "dist",
         "sort-packages": true,
         "platform": {
+            "php": "8.3.0",
             "ext-pcntl": "8.4",
             "ext-posix": "8.4"
         },

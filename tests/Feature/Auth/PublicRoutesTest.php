@@ -18,6 +18,7 @@ it('requires authentication on every route except the public allowlist', functio
         'two-factor.login.store',
         'setup.create',               // first-run setup, 404 once an owner exists
         'setup.store',
+        'webhooks.github',            // GitHub push webhook, authenticated by HMAC signature
         'storage.local',              // signed URLs only
         'storage.local.upload',
     ];

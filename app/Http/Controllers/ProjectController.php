@@ -67,6 +67,7 @@ class ProjectController extends Controller
             'project' => (new ProjectResource($project))->withSettings($request),
             'deployments' => DeploymentResource::collection($deployments)->toArray($request),
             'hasActiveDeployment' => $deployments->contains(fn (Deployment $deployment): bool => ! $deployment->status->isFinished()),
+            'webhookUrl' => route('webhooks.github', ['slug' => $project->slug]),
         ]);
     }
 

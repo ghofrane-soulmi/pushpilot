@@ -3,6 +3,7 @@ import { Form, Head, Link, usePage } from '@inertiajs/vue3';
 import { CircleCheck, CircleX, FolderCog, Rocket } from '@lucide/vue';
 import { computed } from 'vue';
 import DeploymentController from '@/actions/App/Http/Controllers/DeploymentController';
+import ProjectWebhookSecretController from '@/actions/App/Http/Controllers/ProjectWebhookSecretController';
 import ProjectInitializationController from '@/actions/App/Http/Controllers/ProjectInitializationController';
 import CopyableCode from '@/components/CopyableCode.vue';
 import DeploymentStatusBadge from '@/components/deployments/DeploymentStatusBadge.vue';
@@ -29,6 +30,7 @@ const props = defineProps<{
     project: ProjectDetails;
     deployments: Deployment[];
     hasActiveDeployment: boolean;
+    webhookUrl: string;
 }>();
 
 defineOptions({
@@ -41,6 +43,11 @@ defineOptions({
 });
 
 const page = usePage();
+
+// Shown only on the page view right after it was generated (spec 9.1).
+const webhookSecret = computed(
+    () => (page.flash as { webhookSecret?: string }).webhookSecret,
+);
 
 const initialization = computed(
     () => (page.flash as { initialization?: ActionResultFlash }).initialization,
@@ -166,6 +173,73 @@ const githubDeployKeysUrl = computed(() => {
                         </Link>
                     </li>
                 </ul>
+            </CardContent>
+        </Card>
+
+        <!-- DEP-2: deploy on push -->
+        <Card v-if="project.initialized_at">
+            <CardHeader>
+                <CardTitle>Deploy on push</CardTitle>
+                <CardDescription>
+                    Add a webhook in GitHub so every push to
+                    <code>{{ project.branch }}</code> deploys automatically. In
+                    the repository: Settings → Webhooks → Add webhook.
+                </CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-4">
+                <ol class="list-decimal space-y-3 pl-5 text-sm">
+                    <li class="space-y-1.5">
+                        <p><strong>Payload URL</strong></p>
+                        <CopyableCode :value="webhookUrl" label="payload URL" />
+                    </li>
+                    <li>
+                        <strong>Content type:</strong>
+                        <code>application/json</code>
+                    </li>
+                    <li class="space-y-2">
+                        <p>
+                            <strong>Secret:</strong> generate one here and paste
+                            it in GitHub. It is shown only once; generating a
+                            new one replaces it.
+                        </p>
+                        <div
+                            v-if="webhookSecret"
+                            class="space-y-1.5"
+                            data-test="webhook-secret"
+                        >
+                            <CopyableCode
+                                :value="webhookSecret"
+                                label="webhook secret"
+                            />
+                            <p class="text-muted-foreground">
+                                Copy it now: it will not be shown again.
+                            </p>
+                        </div>
+                        <Form
+                            v-else
+                            v-bind="
+                                ProjectWebhookSecretController.form(project.id)
+                            "
+                            v-slot="{ processing }"
+                        >
+                            <Button
+                                type="submit"
+                                variant="outline"
+                                size="sm"
+                                :disabled="processing"
+                                data-test="generate-webhook-secret"
+                            >
+                                <Spinner v-if="processing" />
+                                Generate webhook secret
+                            </Button>
+                        </Form>
+                    </li>
+                    <li>
+                        <strong>Events:</strong> "Just the push event", then
+                        <strong>Add webhook</strong>. GitHub sends a ping, which
+                        should show a green check.
+                    </li>
+                </ol>
             </CardContent>
         </Card>
 

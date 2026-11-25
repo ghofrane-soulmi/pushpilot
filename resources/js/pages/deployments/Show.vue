@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Form, Head, Link, usePoll } from '@inertiajs/vue3';
+import { Form, Head, Link, router, usePoll } from '@inertiajs/vue3';
+import { useEcho } from '@laravel/echo-vue';
 import {
     CircleCheck,
     CircleDashed,
@@ -41,9 +42,41 @@ defineOptions({
 
 const active = computed(() => isActive(props.deployment.status));
 
-// Refresh every 2s while the deployment runs. Milestone 5 replaces this with live WebSocket lines.
+type LiveLine = { step: string; line: string; stream: 'stdout' | 'stderr' };
+
+// DEP-5: lines pushed over WebSockets while the deployment runs. The stored
+// log (props) stays the source of truth; live lines are dropped whenever the
+// page reloads it.
+const liveLines = ref<LiveLine[]>([]);
+
+watch(
+    () => props.deployment.log,
+    () => (liveLines.value = []),
+);
+
+const lines = computed(() => [
+    ...props.deployment.log.map((line) => ({ ...line, key: `db-${line.id}` })),
+    ...liveLines.value.map((line, index) => ({
+        ...line,
+        key: `live-${index}`,
+    })),
+]);
+
+useEcho<{ lines?: LiveLine[]; status?: string }>(
+    `deployments.${props.deployment.id}`,
+    ['.log', '.updated'],
+    (payload) => {
+        if (payload.lines) {
+            liveLines.value.push(...payload.lines);
+        } else {
+            router.reload({ only: ['deployment'] });
+        }
+    },
+);
+
+// Fallback in case the WebSocket connection drops: refresh every 15s while running.
 const { start, stop } = usePoll(
-    2000,
+    15000,
     { only: ['deployment'] },
     { autoStart: false },
 );
@@ -69,7 +102,7 @@ function onScroll(): void {
 
 onMounted(scrollToEnd);
 watch(
-    () => props.deployment.log.length,
+    () => lines.value.length,
     () => nextTick(scrollToEnd),
 );
 
@@ -249,10 +282,7 @@ const startedAt = computed(() =>
                     data-test="deployment-log"
                     @scroll="onScroll"
                 >
-                    <p
-                        v-if="deployment.log.length === 0"
-                        class="text-neutral-400"
-                    >
+                    <p v-if="lines.length === 0" class="text-neutral-400">
                         {{
                             deployment.status === 'queued'
                                 ? 'Waiting for a worker…'
@@ -260,17 +290,16 @@ const startedAt = computed(() =>
                         }}
                     </p>
                     <div
-                        v-for="line in deployment.log"
-                        :key="line.id"
+                        v-for="line in lines"
+                        :key="line.key"
                         class="break-all whitespace-pre-wrap"
                         :class="{
                             'text-red-300': line.stream === 'stderr',
                             'mt-2 font-semibold text-sky-300':
                                 line.line.startsWith('▶'),
                         }"
-                    >
-                        {{ line.line || ' ' }}
-                    </div>
+                        v-text="line.line || ' '"
+                    />
                 </div>
             </div>
         </div>

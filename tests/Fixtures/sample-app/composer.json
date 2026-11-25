@@ -1,0 +1,7 @@
+{
+    "name": "pushpilot/sample-app",
+    "description": "Minimal app deployed by Pushpilot's integration tests.",
+    "type": "project",
+    "license": "MIT",
+    "require": {}
+}

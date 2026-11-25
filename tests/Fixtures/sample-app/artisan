@@ -1,0 +1,9 @@
+#!/usr/bin/env php
+<?php
+
+// Stand-in for Laravel's artisan: accepts the commands the pipeline runs.
+$command = $argv[1] ?? '';
+
+echo "sample-app artisan: {$command}".PHP_EOL;
+
+exit(in_array($command, ['optimize', 'migrate', 'queue:restart'], true) ? 0 : 1);

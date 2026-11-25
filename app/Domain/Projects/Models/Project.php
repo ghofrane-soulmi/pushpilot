@@ -2,6 +2,7 @@
 
 namespace App\Domain\Projects\Models;
 
+use App\Domain\Deployments\Models\Deployment;
 use App\Domain\Servers\Models\Server;
 use App\Support\Ssh\Shell;
 use Carbon\CarbonImmutable;
@@ -116,6 +117,14 @@ class Project extends Model
     public function server(): BelongsTo
     {
         return $this->belongsTo(Server::class);
+    }
+
+    /**
+     * @return HasMany<Deployment, $this>
+     */
+    public function deployments(): HasMany
+    {
+        return $this->hasMany(Deployment::class);
     }
 
     /**

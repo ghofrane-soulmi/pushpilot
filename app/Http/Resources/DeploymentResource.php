@@ -62,11 +62,11 @@ class DeploymentResource extends JsonResource
                 'name' => $deployment->project->name,
                 'branch' => $deployment->project->branch,
             ],
-            'steps' => array_values(array_map(fn (DeploymentStep $step): array => [
+            'steps' => array_map(fn (DeploymentStep $step): array => [
                 'name' => $step->name(),
                 'label' => $step->label(),
                 'ran' => in_array($step->name(), $loggedSteps, true),
-            ], Pipeline::steps())),
+            ], Pipeline::steps()),
             'log' => $logs->map(fn (DeploymentLog $log): array => [
                 'id' => $log->id,
                 'step' => $log->step,

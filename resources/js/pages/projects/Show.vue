@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { Form, Head, Link, usePage } from '@inertiajs/vue3';
-import { CircleCheck, CircleX, FolderCog } from '@lucide/vue';
+import { CircleCheck, CircleX, FolderCog, Rocket } from '@lucide/vue';
 import { computed } from 'vue';
+import DeploymentController from '@/actions/App/Http/Controllers/DeploymentController';
 import ProjectInitializationController from '@/actions/App/Http/Controllers/ProjectInitializationController';
 import CopyableCode from '@/components/CopyableCode.vue';
+import DeploymentStatusBadge from '@/components/deployments/DeploymentStatusBadge.vue';
 import Heading from '@/components/Heading.vue';
 import ProjectNav from '@/components/projects/ProjectNav.vue';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -17,12 +19,16 @@ import {
     CardTitle,
 } from '@/components/ui/card';
 import { Spinner } from '@/components/ui/spinner';
+import { show as showDeployment } from '@/routes/deployments';
 import { index, show } from '@/routes/projects';
 import { show as showServer } from '@/routes/servers';
-import type { ActionResultFlash, ProjectDetails } from '@/types';
+import { formatDuration } from '@/types';
+import type { ActionResultFlash, Deployment, ProjectDetails } from '@/types';
 
 const props = defineProps<{
     project: ProjectDetails;
+    deployments: Deployment[];
+    hasActiveDeployment: boolean;
 }>();
 
 defineOptions({
@@ -84,6 +90,84 @@ const githubDeployKeysUrl = computed(() => {
         </div>
 
         <ProjectNav :project-id="project.id" current="overview" />
+
+        <!-- DEP-1: deploy -->
+        <Card v-if="project.initialized_at">
+            <CardHeader>
+                <CardTitle>Deployments</CardTitle>
+                <CardDescription>
+                    Deploys the latest commit of
+                    <code>{{ project.branch }}</code
+                    >. The site keeps running on the current release until the
+                    new one is fully built.
+                </CardDescription>
+            </CardHeader>
+            <CardContent class="space-y-4">
+                <Form
+                    v-bind="DeploymentController.store.form(project.id)"
+                    v-slot="{ processing }"
+                >
+                    <Button
+                        type="submit"
+                        :disabled="processing"
+                        data-test="deploy-now"
+                    >
+                        <Spinner v-if="processing" />
+                        <Rocket v-else class="size-4" />
+                        Deploy now
+                    </Button>
+                    <span
+                        v-if="hasActiveDeployment"
+                        class="ml-3 text-sm text-muted-foreground"
+                    >
+                        A deployment is in progress; a new one will wait for it.
+                    </span>
+                </Form>
+
+                <p
+                    v-if="deployments.length === 0"
+                    class="text-sm text-muted-foreground"
+                >
+                    No deployments yet.
+                </p>
+                <ul
+                    v-else
+                    class="divide-y rounded-md border"
+                    data-test="deployments"
+                >
+                    <li v-for="deployment in deployments" :key="deployment.id">
+                        <Link
+                            :href="showDeployment(deployment.id)"
+                            class="flex flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 text-sm hover:bg-muted/40 focus-visible:bg-muted/40"
+                        >
+                            <DeploymentStatusBadge
+                                :status="deployment.status"
+                            />
+                            <span class="font-mono text-xs">{{
+                                deployment.commit_hash?.slice(0, 7) ??
+                                '#' + deployment.id
+                            }}</span>
+                            <span class="min-w-0 flex-1 truncate">{{
+                                deployment.commit_message ??
+                                'Waiting for commit details'
+                            }}</span>
+                            <span class="text-muted-foreground">{{
+                                formatDuration(deployment.duration)
+                            }}</span>
+                            <span class="text-muted-foreground">
+                                {{
+                                    deployment.created_at
+                                        ? new Date(
+                                              deployment.created_at,
+                                          ).toLocaleString()
+                                        : ''
+                                }}
+                            </span>
+                        </Link>
+                    </li>
+                </ul>
+            </CardContent>
+        </Card>
 
         <!-- PRJ-2: deploy key -->
         <Card>

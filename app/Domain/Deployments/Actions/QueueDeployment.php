@@ -16,8 +16,15 @@ use App\Models\User;
  */
 final class QueueDeployment
 {
-    public function handle(Project $project, ?User $user, DeploymentTrigger $trigger = DeploymentTrigger::Manual): Deployment
-    {
+    /**
+     * @param  array{hash?: string|null, message?: string|null, author?: string|null}  $commit  known up front for webhook pushes
+     */
+    public function handle(
+        Project $project,
+        ?User $user,
+        DeploymentTrigger $trigger = DeploymentTrigger::Manual,
+        array $commit = [],
+    ): Deployment {
         if ($project->initialized_at === null) {
             throw new ProjectNotReadyException('Initialize the project before deploying it.');
         }
@@ -28,6 +35,9 @@ final class QueueDeployment
         $deployment->type = DeploymentType::Deploy;
         $deployment->trigger = $trigger;
         $deployment->status = DeploymentStatus::Queued;
+        $deployment->commit_hash = isset($commit['hash']) ? substr($commit['hash'], 0, 40) : null;
+        $deployment->commit_message = $commit['message'] ?? null;
+        $deployment->commit_author = isset($commit['author']) ? mb_substr($commit['author'], 0, 255) : null;
         $deployment->save();
 
         DeployJob::dispatch($deployment);

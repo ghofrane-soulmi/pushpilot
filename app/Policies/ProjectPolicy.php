@@ -44,6 +44,14 @@ class ProjectPolicy
     }
 
     /**
+     * Start a deployment (DEP-1).
+     */
+    public function deploy(User $user, Project $project): bool
+    {
+        return $this->canManage($user);
+    }
+
+    /**
      * Run Initialize on the server.
      */
     public function initialize(User $user, Project $project): bool

@@ -216,6 +216,8 @@ final class Pipeline
 
         if ($error !== null) {
             $context->logger->info($error);
+        } elseif ($status === DeploymentStatus::Succeeded) {
+            $context->logger->info('✓ Release '.$context->releaseName.' is live.');
         }
 
         $deployment->status = $status;

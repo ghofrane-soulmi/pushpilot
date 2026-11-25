@@ -11,9 +11,12 @@ use App\Policies\ServerPolicy;
 use App\Support\Ssh\PhpseclibSshClient;
 use App\Support\Ssh\SshClient;
 use Carbon\CarbonImmutable;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -38,6 +41,10 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Server::class, ServerPolicy::class);
         Gate::policy(Project::class, ProjectPolicy::class);
         Gate::policy(Deployment::class, DeploymentPolicy::class);
+
+        // Spec 9.1: rate limit the public webhook endpoint per project and source.
+        RateLimiter::for('webhooks', fn (Request $request) => Limit::perMinute(30)
+            ->by($request->ip().'|'.(string) $request->route('slug')));
     }
 
     /**

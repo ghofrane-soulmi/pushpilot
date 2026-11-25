@@ -5,6 +5,8 @@ namespace App\Domain\Deployments\Models;
 use App\Domain\Deployments\Enums\DeploymentStatus;
 use App\Domain\Deployments\Enums\DeploymentTrigger;
 use App\Domain\Deployments\Enums\DeploymentType;
+use App\Domain\Deployments\Events\DeploymentUpdated;
+use App\Domain\Deployments\Support\LiveUpdates;
 use App\Domain\Projects\Models\Project;
 use App\Models\User;
 use Carbon\CarbonImmutable;
@@ -56,6 +58,18 @@ class Deployment extends Model
         'trigger' => 'manual',
         'status' => 'queued',
     ];
+
+    /**
+     * Tell open deployment pages when the status, step or commit changes.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (Deployment $deployment): void {
+            if ($deployment->wasRecentlyCreated || $deployment->wasChanged(['status', 'current_step', 'commit_hash', 'warnings', 'cancel_requested_at'])) {
+                LiveUpdates::send(new DeploymentUpdated($deployment));
+            }
+        });
+    }
 
     protected function casts(): array
     {

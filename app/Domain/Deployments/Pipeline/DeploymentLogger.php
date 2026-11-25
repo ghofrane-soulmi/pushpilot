@@ -2,7 +2,9 @@
 
 namespace App\Domain\Deployments\Pipeline;
 
+use App\Domain\Deployments\Events\DeploymentLogged;
 use App\Domain\Deployments\Models\Deployment;
+use App\Domain\Deployments\Support\LiveUpdates;
 use App\Support\Ssh\OutputStream;
 use Illuminate\Support\Facades\DB;
 
@@ -78,12 +80,20 @@ final class DeploymentLogger
 
         $now = now();
 
-        DB::table('deployment_logs')->insert(array_map(fn (array $line): array => [
+        $rows = array_map(fn (array $line): array => [
             'deployment_id' => $this->deployment->id,
             'step' => $this->step,
             'line' => mb_substr($this->masker->mask(rtrim($line[0], "\r")), 0, 10000),
             'stream' => $line[1]->value,
             'created_at' => $now,
-        ], $lines));
+        ], $lines);
+
+        DB::table('deployment_logs')->insert($rows);
+
+        // Only masked lines ever leave the server (DEP-5, spec 8.3).
+        LiveUpdates::send(new DeploymentLogged($this->deployment->id, array_map(
+            fn (array $row): array => ['step' => $row['step'], 'line' => $row['line'], 'stream' => $row['stream']],
+            $rows,
+        )));
     }
 }

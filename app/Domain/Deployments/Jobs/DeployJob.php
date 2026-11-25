@@ -5,6 +5,7 @@ namespace App\Domain\Deployments\Jobs;
 use App\Domain\Deployments\Enums\DeploymentStatus;
 use App\Domain\Deployments\Models\Deployment;
 use App\Domain\Deployments\Pipeline\Pipeline;
+use App\Domain\Deployments\Support\LiveUpdates;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -69,6 +70,9 @@ final class DeployJob implements ShouldQueue
         if ($deployment === null || $deployment->status !== DeploymentStatus::Queued) {
             return;
         }
+
+        // Long-lived workers: a Reverb outage during an earlier job must not mute this one.
+        LiveUpdates::reset();
 
         $pipeline->run($deployment);
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\Deployments\Models\Deployment;
 use App\Domain\Projects\Actions\CreateProject;
 use App\Domain\Projects\Actions\DeleteProject;
 use App\Domain\Projects\Actions\UpdateProject;
@@ -10,6 +11,7 @@ use App\Domain\Projects\Models\Project;
 use App\Domain\Servers\Models\Server;
 use App\Http\Requests\Projects\StoreProjectRequest;
 use App\Http\Requests\Projects\UpdateProjectRequest;
+use App\Http\Resources\DeploymentResource;
 use App\Http\Resources\ProjectResource;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -59,8 +61,12 @@ class ProjectController extends Controller
 
         $project->load(['server', 'hooks']);
 
+        $deployments = $project->deployments()->with('user')->latest('id')->limit(15)->get();
+
         return Inertia::render('projects/Show', [
             'project' => (new ProjectResource($project))->withSettings($request),
+            'deployments' => DeploymentResource::collection($deployments)->toArray($request),
+            'hasActiveDeployment' => $deployments->contains(fn (Deployment $deployment): bool => ! $deployment->status->isFinished()),
         ]);
     }
 

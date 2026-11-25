@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\DeploymentController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectEnvironmentController;
 use App\Http\Controllers\ProjectInitializationController;
@@ -27,6 +28,12 @@ Route::middleware('auth')->group(function () {
         ->name('servers.check');
 
     Route::resource('projects', ProjectController::class);
+    Route::post('projects/{project}/deploy', [DeploymentController::class, 'store'])
+        ->middleware('throttle:20,1')
+        ->name('projects.deploy');
+    Route::get('deployments/{deployment}', [DeploymentController::class, 'show'])->name('deployments.show');
+    Route::post('deployments/{deployment}/cancel', [DeploymentController::class, 'cancel'])->name('deployments.cancel');
+
     Route::post('projects/{project}/initialize', ProjectInitializationController::class)
         ->middleware('throttle:10,1')
         ->name('projects.initialize');

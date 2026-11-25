@@ -4,6 +4,7 @@ use App\Http\Controllers\DeploymentController;
 use App\Http\Controllers\ProjectController;
 use App\Http\Controllers\ProjectEnvironmentController;
 use App\Http\Controllers\ProjectInitializationController;
+use App\Http\Controllers\ProjectWebhookSecretController;
 use App\Http\Controllers\ServerConnectionController;
 use App\Http\Controllers\ServerController;
 use App\Http\Controllers\SetupController;
@@ -33,6 +34,10 @@ Route::middleware('auth')->group(function () {
         ->name('projects.deploy');
     Route::get('deployments/{deployment}', [DeploymentController::class, 'show'])->name('deployments.show');
     Route::post('deployments/{deployment}/cancel', [DeploymentController::class, 'cancel'])->name('deployments.cancel');
+
+    Route::post('projects/{project}/webhook-secret', ProjectWebhookSecretController::class)
+        ->middleware('throttle:10,1')
+        ->name('projects.webhook-secret');
 
     Route::post('projects/{project}/initialize', ProjectInitializationController::class)
         ->middleware('throttle:10,1')

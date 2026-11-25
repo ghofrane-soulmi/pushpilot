@@ -73,6 +73,17 @@ return [
             'after_commit' => false,
         ],
 
+        // Long-running deploy jobs: retry_after must exceed the global deploy
+        // timeout, or a second worker would pick up a deployment still running.
+        'deployments' => [
+            'driver' => 'redis',
+            'connection' => env('REDIS_QUEUE_CONNECTION', 'default'),
+            'queue' => 'deployments',
+            'retry_after' => (int) env('PUSHPILOT_DEPLOY_TIMEOUT', 1800) + 300,
+            'block_for' => null,
+            'after_commit' => true,
+        ],
+
         'deferred' => [
             'driver' => 'deferred',
         ],

@@ -205,6 +205,21 @@ return [
             'timeout' => 60,
             'nice' => 0,
         ],
+
+        // Dedicated supervisor so long SSH deployments never block other jobs.
+        // Jobs decide their own retry policy; the timeout covers the global deploy timeout.
+        'deployments' => [
+            'connection' => 'deployments',
+            'queue' => ['deployments'],
+            'balance' => 'simple',
+            'maxProcesses' => 3,
+            'maxTime' => 0,
+            'maxJobs' => 0,
+            'memory' => 256,
+            'tries' => 0,
+            'timeout' => (int) env('PUSHPILOT_DEPLOY_TIMEOUT', 1800) + 120,
+            'nice' => 0,
+        ],
     ],
 
     'environments' => [
@@ -214,11 +229,17 @@ return [
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
             ],
+            'deployments' => [
+                'maxProcesses' => 5,
+            ],
         ],
 
         'local' => [
             'supervisor-1' => [
                 'maxProcesses' => 3,
+            ],
+            'deployments' => [
+                'maxProcesses' => 2,
             ],
         ],
     ],

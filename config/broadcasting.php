@@ -42,7 +42,9 @@ return [
                 'useTLS' => env('REVERB_SCHEME', 'https') === 'https',
             ],
             'client_options' => [
-                // Guzzle client options: https://docs.guzzlephp.org/en/stable/request-options.html
+                // Fail fast: live logs are best effort and must never stall a deployment.
+                'connect_timeout' => 2,
+                'timeout' => 3,
             ],
         ],
 
